@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="styles.css">
+    <title>AI Research Assistant</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/2.1.3/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>AI Research Assistant</h1>
+        <p class="description">
+            This tool combines web search results with AI analysis to provide comprehensive answers. 
+            It searches DuckDuckGo for up-to-date information and uses AI to analyze and synthesize the findings.
+        </p>
+        <form id="questionForm">
+            <label for="apiKey">API Key:</label>
+            <input 
+                type="text" 
+                id="apiKey" 
+                name="apiKey" 
+                placeholder="sk-..." 
+                required
+            >
+            
+            <label for="model">Select Model:</label>
+            <select id="model" name="model">
+                <option value="gpt-4o">gpt-4o</option>
+                <option value="gpt-4o-mini">gpt-4o-mini</option>
+                <option value="o1">o1</option>
+                <option value="o3-mini">o3-mini</option>
+            </select>
+            
+            <label for="question">Ask a question:</label>
+            <input 
+                type="text" 
+                id="question" 
+                name="question" 
+                placeholder="Enter your research question..." 
+                required
+            >
+            <button type="submit">Research</button>
+        </form>
+        
+        <div id="loading" style="display: none;">
+            <div class="loading-animation"></div>
+        </div>
+        <div id="status"></div>
+        <div id="report"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
