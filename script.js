@@ -24,7 +24,17 @@ You are an advanced AI research assistant tasked with creating extensive, in-dep
    - Important implications and recommendations
    - Future outlook and considerations
 
-3. **Detailed Analysis** (No length limit - be as comprehensive as needed)
+3. **Key Questions and Analysis** (Minimum 500 words per question)
+   - List of generated research questions
+   - For each question:
+     * In-depth exploration and analysis
+     * Supporting evidence from multiple sources
+     * Critical evaluation of findings
+     * Real-world implications and examples
+     * Connection to the main research topic
+     * Future considerations and open questions
+
+4. **Detailed Analysis** (No length limit - be as comprehensive as needed)
    - Analyze the topic based on the specific question asked
    - Create relevant sections that directly address different aspects of the question
    - Each section should include:
@@ -35,7 +45,7 @@ You are an advanced AI research assistant tasked with creating extensive, in-dep
      * Implications and impact
      * Future considerations where relevant
 
-3. **References**
+5. **References**
    - Comprehensive source listing
    - All URLs as clickable links
    - Brief source descriptions
@@ -273,9 +283,27 @@ ${r.content || r.snippet}
 ---`).join('\n')}
 `).join('\n')}
 
-Create a comprehensive research report that includes a quick answer (200-300 words) followed by an extensive detailed analysis. Be as thorough and detailed as the topic requires - there is no maximum length limit. Include extensive analysis, examples, and case studies where relevant.
+Create a comprehensive research report following this structure:
 
-Use [SourceName] format for citations and include all sources in the References section.
+1. Quick Answer (300-500 words): Provide a concise but comprehensive summary of the main findings.
+
+2. Executive Summary (800-1000 words): Synthesize all findings, including insights from both main research and follow-up questions.
+
+3. Key Questions and Analysis:
+Here are the follow-up questions that were explored:
+${followUpQuestions.map((q, i) => `\n${i + 1}. ${q}`).join('')}
+
+For each question above, provide:
+- Minimum 500 words of in-depth analysis
+- Integration of findings from multiple sources
+- Critical evaluation of the evidence
+- Real-world implications and examples
+- Connection to the main research question
+- Future considerations and open areas for research
+
+4. Detailed Analysis: Provide comprehensive analysis of all aspects of the main research question, incorporating insights from both primary and follow-up research.
+
+Use [SourceName] format for citations and include all sources in the References section. Be as thorough and detailed as the topic requires - there is no maximum length limit. Include extensive analysis, examples, and case studies where relevant.
 `;
 
         // Send all research data for final synthesis
