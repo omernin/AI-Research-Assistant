@@ -4,6 +4,30 @@ const STORAGE_KEYS = {
     REPORTS: 'researcher_reports'
 };
 
+// Model pricing per 1M tokens
+const MODEL_PRICING = {
+    'gpt-4o': {
+        input: 2.5,      // $2.50 per 1M input tokens
+        cachedInput: 1.25, // $1.25 per 1M cached input tokens
+        output: 10       // $10.00 per 1M output tokens
+    },
+    'gpt-4o-mini': {
+        input: 0.15,     // $0.15 per 1M input tokens
+        cachedInput: 0.075, // $0.075 per 1M cached input tokens
+        output: 0.6      // $0.60 per 1M output tokens
+    },
+    'o1': {
+        input: 15,       // $15.00 per 1M input tokens
+        cachedInput: 7.5,  // $7.50 per 1M cached input tokens
+        output: 60       // $60.00 per 1M output tokens
+    },
+    'o3-mini': {
+        input: 1.1,      // $1.10 per 1M input tokens
+        cachedInput: 0.55, // $0.55 per 1M cached input tokens
+        output: 4.4      // $4.40 per 1M output tokens
+    }
+};
+
 // Configuration settings
 const CONFIG = {
     followUpQuestions: 10,  // Number of follow-up questions to generate
@@ -25,8 +49,10 @@ function saveReport(question, report) {
     const newReport = {
         id: Date.now(),
         question,
-        report,
-        timestamp: new Date().toISOString()
+        report: report.content,
+        timestamp: new Date().toISOString(),
+        cost: report.cost,
+        model: report.model
     };
     reports.unshift(newReport); // Add to beginning of array
     localStorage.setItem(STORAGE_KEYS.REPORTS, JSON.stringify(reports));
@@ -37,12 +63,17 @@ function saveReport(question, report) {
 function loadReportHistory() {
     const historyList = document.getElementById('historyList');
     const reports = JSON.parse(localStorage.getItem(STORAGE_KEYS.REPORTS) || '[]');
-    
+
     historyList.innerHTML = reports.map(report => `
         <div class="history-item" data-id="${report.id}">
             <div class="history-content" onclick="loadHistoryReport(${report.id})">
                 <h3>${report.question}</h3>
-                <p>${new Date(report.timestamp).toLocaleString()}</p>
+                <p>
+                    ${new Date(report.timestamp).toLocaleString()}
+                    <span class="cost-info">
+                        <br>Model: ${report.model} | Cost: ${formatCost(report.cost)}
+                    </span>
+                </p>
             </div>
             <button class="delete-btn" onclick="deleteReport(${report.id})">×</button>
         </div>
@@ -64,6 +95,7 @@ function loadHistoryReport(id) {
     if (report) {
         document.getElementById('report').innerHTML = `
             <p>Researching: <strong>${report.question}</strong></p>
+            <p class="cost-info">Model: ${report.model} | Total Cost: ${formatCost(report.cost)}</p>
             <div class="report-actions">
                 <button class="action-btn" onclick="copyReport()">Copy Report</button>
                 <button class="action-btn" onclick="downloadReport('${report.question}')">Download</button>
@@ -91,7 +123,7 @@ function downloadReport(question) {
     const filename = question.toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '') + '-report.txt';
-    
+
     const blob = new Blob([reportText], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -329,7 +361,7 @@ async function searchDuckDuckGo(query) {
 // Function to perform a single research cycle
 async function performResearchCycle(question, apiKey, model, cycleNumber, previousReport = '') {
     document.getElementById('status').innerHTML = `Cycle ${cycleNumber}/${CONFIG.depthCycle}: Searching the web...`;
-    
+
     const mainResults = await searchDuckDuckGo(question);
     document.getElementById('status').innerHTML = `Cycle ${cycleNumber}/${CONFIG.depthCycle}: Analyzing results...`;
 
@@ -384,12 +416,12 @@ Format the response as a simple numbered list, 1-${CONFIG.followUpQuestions}, on
         .map(line => line.replace(/^\d+\.\s+/, '').trim());
 
     document.getElementById('status').innerHTML = `Cycle ${cycleNumber}/${CONFIG.depthCycle}: Gathering additional information...`;
-    
+
     // Search for follow-up questions
     const followUpResults = await Promise.all(
         followUpQuestions.map(q => searchDuckDuckGo(q))
     );
-    
+
     // Combine all sources
     const allSources = [
         ...mainResults.results,
@@ -397,7 +429,7 @@ Format the response as a simple numbered list, 1-${CONFIG.followUpQuestions}, on
     ];
 
     document.getElementById('status').innerHTML = `Cycle ${cycleNumber}/${CONFIG.depthCycle}: Synthesizing report...`;
-    
+
     // Format research data for synthesis
     const researchData = `
 Main Research Question: ${question}
@@ -452,14 +484,22 @@ Use [SourceName] format for citations and include all sources in the References 
         { role: 'user', content: researchData }
     ], apiKey, model);
 
+    // Calculate total cost for this cycle
+    const totalCost = (
+        parseFloat(followUpResponse.usage.cost) +
+        parseFloat(finalReport.usage.cost)
+    ).toFixed(4);
+
     return {
         report: finalReport.choices[0].message.content,
-        sources: allSources
+        sources: allSources,
+        cost: totalCost,
+        model: model
     };
 }
 
-const sendMessage = (messages, apiKey, model) => {
-    return fetch('https://api.openai.com/v1/chat/completions', {
+const sendMessage = async (messages, apiKey, model) => {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -471,12 +511,26 @@ const sendMessage = (messages, apiKey, model) => {
             temperature: 0.7,
             max_tokens: 16000 // Significantly increased for much longer responses
         })
-    }).then(response => {
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
     });
+
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const result = await response.json();
+    const cost = calculateCost(
+        result.usage.prompt_tokens,
+        result.usage.completion_tokens,
+        model
+    );
+
+    return {
+        ...result,
+        usage: {
+            ...result.usage,
+            cost: cost
+        }
+    };
 };
 
 // Function to update CONFIG from UI inputs
@@ -500,7 +554,7 @@ function updateConfigFromUI() {
 }
 
 // Add event listeners for API key management
-document.getElementById('apiKey').addEventListener('input', function(event) {
+document.getElementById('apiKey').addEventListener('input', function (event) {
     const apiKey = event.target.value.trim();
     if (apiKey) {
         localStorage.setItem(STORAGE_KEYS.API_KEY, apiKey);
@@ -508,7 +562,7 @@ document.getElementById('apiKey').addEventListener('input', function(event) {
     updateClearKeyButton();
 });
 
-document.getElementById('clearApiKey').addEventListener('click', function(event) {
+document.getElementById('clearApiKey').addEventListener('click', function (event) {
     event.preventDefault();
     localStorage.removeItem(STORAGE_KEYS.API_KEY);
     document.getElementById('apiKey').value = '';
@@ -521,7 +575,7 @@ document.getElementById('questionForm').addEventListener('submit', async functio
     const apiKeyInput = document.getElementById('apiKey');
     const model = document.getElementById('model').value;
     const question = document.getElementById('question').value;
-    
+
     // Update configuration from UI
     updateConfigFromUI();
 
@@ -545,18 +599,21 @@ document.getElementById('questionForm').addEventListener('submit', async functio
     try {
         let currentReport = '';
         let allSources = [];
+        let totalCost = 0;
 
         // Perform multiple research cycles if configured
         for (let cycle = 1; cycle <= CONFIG.depthCycle; cycle++) {
             const result = await performResearchCycle(question, apiKey, model, cycle, currentReport);
             currentReport = result.report;
             allSources = [...new Set([...allSources, ...result.sources])];
+            totalCost = (parseFloat(totalCost) + parseFloat(result.cost)).toFixed(4);
 
             // Process and display the report after each cycle
             const processedReport = processResponse(currentReport, allSources);
             const reportHtml = `
                 <p>Researching: <strong>${question}</strong></p>
                 <p>Completed Cycle ${cycle}/${CONFIG.depthCycle}</p>
+                <p class="cost-info">Model: ${model} | Current Cycle Cost: ${formatCost(result.cost)} | Total Cost: ${formatCost(totalCost)}</p>
                 <div class="report-actions">
                     <button class="action-btn" onclick="copyReport()">Copy Report</button>
                     <button class="action-btn" onclick="downloadReport('${question}')">Download</button>
@@ -566,8 +623,12 @@ document.getElementById('questionForm').addEventListener('submit', async functio
             document.getElementById('report').innerHTML = reportHtml;
         }
 
-        // Save the final report to history
-        saveReport(question, currentReport);
+        // Save the final report to history with total cost
+        saveReport(question, {
+            content: currentReport,
+            cost: totalCost,
+            model: model
+        });
     } catch (error) {
         console.error('Error:', error);
         document.getElementById('report').innerHTML += `<p class="error">Error: ${error.message}. Please try again.</p>`;
@@ -576,6 +637,26 @@ document.getElementById('questionForm').addEventListener('submit', async functio
         document.getElementById('status').innerHTML = '';
     }
 });
+
+// Function to calculate cost based on token counts and model
+function calculateCost(inputTokens, outputTokens, model) {
+    const pricing = MODEL_PRICING[model];
+    if (!pricing) return 0;
+
+    // Convert token counts to millions
+    const inputMillions = inputTokens / 1000000;
+    const outputMillions = outputTokens / 1000000;
+
+    const inputCost = inputMillions * pricing.input;
+    const outputCost = outputMillions * pricing.output;
+
+    return (inputCost + outputCost).toFixed(4);
+}
+
+// Function to format cost display
+function formatCost(cost) {
+    return `$${parseFloat(cost).toFixed(4)}`;
+}
 
 // Function to process response and format references
 function processResponse(response, sources) {
