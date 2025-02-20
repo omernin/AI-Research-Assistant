@@ -157,10 +157,15 @@ document.addEventListener('DOMContentLoaded', () => {
         sidebar.classList.toggle('collapsed');
     });
 
-    // Load saved API key
+    // Load saved API key and set config section state
     const savedApiKey = localStorage.getItem(STORAGE_KEYS.API_KEY);
+    const configSection = document.getElementById('configSection');
+    
     if (savedApiKey) {
         document.getElementById('apiKey').value = savedApiKey;
+        configSection.removeAttribute('open');
+    } else {
+        configSection.setAttribute('open', '');
     }
     updateClearKeyButton();
 

@@ -26,36 +26,41 @@
             It searches DuckDuckGo for up-to-date information and uses AI to analyze and synthesize the findings.
         </p>
         <form id="questionForm">
-            <label for="apiKey">API Key:</label>
-            <div class="api-key-container">
-                <input type="password" id="apiKey" name="apiKey" placeholder="sk-..." required>
-                <button type="button" id="clearApiKey" class="clear-api-key" style="display: none;">Clear Key</button>
-            </div>
+            <details id="configSection">
+                <summary>Configuration Settings</summary>
+                <div class="config-content">
+                    <label for="apiKey">API Key:</label>
+                    <div class="api-key-container">
+                        <input type="password" id="apiKey" name="apiKey" placeholder="sk-..." required>
+                        <button type="button" id="clearApiKey" class="clear-api-key" style="display: none;">Clear Key</button>
+                    </div>
 
-            <label for="model">Select Model:</label>
-            <select id="model" name="model">
-                <option value="gpt-4o">gpt-4o</option>
-                <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
-                <option value="o1">o1</option>
-                <option value="o3-mini">o3-mini</option>
-            </select>
+                    <label for="model">Select Model:</label>
+                    <select id="model" name="model">
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+                        <option value="o1">o1</option>
+                        <option value="o3-mini">o3-mini</option>
+                    </select>
 
-            <div class="config-section">
-                <h3>Research Configuration</h3>
+                    <div class="config-section">
+                        <h3>Research Configuration</h3>
 
-                <label for="followUpQuestions">Number of Follow-up Questions:</label>
-                <input type="number" id="followUpQuestions" name="followUpQuestions" value="10" min="1" max="20">
+                        <label for="followUpQuestions">Number of Follow-up Questions:</label>
+                        <input type="number" id="followUpQuestions" name="followUpQuestions" value="10" min="1" max="20">
 
-                <label for="searchResults">Number of Search Results:</label>
-                <input type="number" id="searchResults" name="searchResults" value="10" min="1" max="20">
+                        <label for="searchResults">Number of Search Results:</label>
+                        <input type="number" id="searchResults" name="searchResults" value="10" min="1" max="20">
 
-                <label for="maxContentLength">Max Content Length per Article:</label>
-                <input type="number" id="maxContentLength" name="maxContentLength" value="8000" min="1000" max="16000"
-                    step="1000">
+                        <label for="maxContentLength">Max Content Length per Article:</label>
+                        <input type="number" id="maxContentLength" name="maxContentLength" value="8000" min="1000" max="16000"
+                            step="1000">
 
-                <label for="depthCycle">Research Depth Cycles:</label>
-                <input type="number" id="depthCycle" name="depthCycle" value="1" min="1" max="3">
-            </div>
+                        <label for="depthCycle">Research Depth Cycles:</label>
+                        <input type="number" id="depthCycle" name="depthCycle" value="1" min="1" max="3">
+                    </div>
+                </div>
+            </details>
 
             <label for="question">Ask a question:</label>
             <input type="text" id="question" name="question" placeholder="Enter your research question..." required>
