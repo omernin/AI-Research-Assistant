@@ -119,11 +119,17 @@ function copyReport() {
 
 // Function to download report as file
 function downloadReport(question) {
-    const reportText = document.querySelector('.response').textContent;
+    const reports = JSON.parse(localStorage.getItem(STORAGE_KEYS.REPORTS) || '[]');
+    const reportObj = reports.find(r => r.question === question);
+    if (!reportObj) {
+        alert("Report not found in local history.");
+        return;
+    }
+    const reportText = reportObj.report;
     const filename = question.toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
         .replace(/(^-|-$)/g, '') + '-report.txt';
-
+ 
     const blob = new Blob([reportText], { type: 'text/plain' });
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -131,21 +137,6 @@ function downloadReport(question) {
     a.download = filename;
     a.click();
     window.URL.revokeObjectURL(url);
-
-    // Add click handlers to history items
-    document.querySelectorAll('.history-item').forEach(item => {
-        item.addEventListener('click', () => {
-            const reportId = parseInt(item.dataset.id);
-            const report = reports.find(r => r.id === reportId);
-            if (report) {
-                document.getElementById('report').innerHTML = `
-                    <p>Researching: <strong>${report.question}</strong></p>
-                    <div class="response">${marked(report.report)}</div>
-                `;
-                document.getElementById('question').value = report.question;
-            }
-        });
-    });
 }
 
 // Initialize UI
@@ -599,6 +590,7 @@ document.getElementById('questionForm').addEventListener('submit', async functio
 
     try {
         let currentReport = '';
+        let finalReport = '';
         let allSources = [];
         let totalCost = 0;
 
@@ -610,7 +602,7 @@ document.getElementById('questionForm').addEventListener('submit', async functio
             totalCost = (parseFloat(totalCost) + parseFloat(result.cost)).toFixed(4);
 
             // Process and display the report after each cycle
-            const processedReport = processResponse(currentReport, allSources);
+            finalReport = processResponse(currentReport, allSources);
             const reportHtml = `
                 <p>Researching: <strong>${question}</strong></p>
                 <p>Completed Cycle ${cycle}/${CONFIG.depthCycle}</p>
@@ -619,14 +611,14 @@ document.getElementById('questionForm').addEventListener('submit', async functio
                     <button class="action-btn" onclick="copyReport()">Copy Report</button>
                     <button class="action-btn" onclick="downloadReport('${question}')">Download</button>
                 </div>
-                <div class="response">${marked(processedReport)}</div>
+                <div class="response">${marked(finalReport)}</div>
             `;
             document.getElementById('report').innerHTML = reportHtml;
         }
 
         // Save the final report to history with total cost
         saveReport(question, {
-            content: currentReport,
+            content: finalReport,
             cost: totalCost,
             model: model
         });
