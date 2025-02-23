@@ -323,13 +323,19 @@ async function searchDuckDuckGo(query) {
                 // Try to fetch the actual page content with increased length
                 if (url) {
                     try {
-                        const pageResponse = await fetch(url);
-                        const pageHtml = await pageResponse.text();
-                        const pageDoc = parser.parseFromString(pageHtml, 'text/html');
-                        pageContent = pageDoc.body.textContent
-                            .replace(/\s+/g, ' ')
-                            .trim()
-                            .slice(0, CONFIG.maxContentLength); // Use configured content length limit
+                        const urlToBypassCORS = "http://localhost:8080/api/fetch?maxLength=" + CONFIG.maxContentLength + "&url=" + url
+                        const pageResponse = await fetch(urlToBypassCORS);
+                        const fetchResponse = await pageResponse.json();
+                        if (typeof fetchResponse.contents !== 'undefined' && fetchResponse.contents != "") {
+                            const pageHtml = fetchResponse.contents;
+                            const pageDoc = parser.parseFromString(pageHtml, 'text/html');
+                            pageContent = pageDoc.body.textContent
+                                .replace(/\s+/g, ' ')
+                                .trim()
+                                .slice(0, CONFIG.maxContentLength); // Use configured content length limit  
+                        } else {
+                            pageContent = snippetEl ? snippetEl.textContent.trim() : '';
+                        }
                     } catch (error) {
                         console.warn(`Could not fetch content for ${url}:`, error);
                         pageContent = snippetEl ? snippetEl.textContent.trim() : '';
