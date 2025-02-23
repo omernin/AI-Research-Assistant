@@ -231,10 +231,6 @@ You are an advanced AI research assistant tasked with creating extensive, in-dep
      * Implications and impact
      * Future considerations where relevant
 
-5. **References**
-   - Comprehensive source listing
-   - All URLs as clickable links
-   - Brief source descriptions
 
 ### **Writing Guidelines**
 
@@ -353,18 +349,12 @@ async function searchDuckDuckGo(query) {
         );
 
         return {
-            results: results,
-            abstract: results[0]?.content || results[0]?.snippet || '',
-            source: results[0]?.title || '',
-            sourceUrl: results[0]?.url || ''
+            results: results
         };
     } catch (error) {
         console.error('Search error:', error);
         return {
-            results: [],
-            abstract: '',
-            source: '',
-            sourceUrl: ''
+            results: []
         };
     }
 }
@@ -683,14 +673,12 @@ function processResponse(response, sources) {
         return match;
     });
 
-    // Format the References section
-    if (processedResponse.includes('References:')) {
-        const [content, references] = processedResponse.split('References:');
+    // Append all fetched references to the final report
+    if (sources && sources.length > 0) {
         const formattedRefs = sources.map((source, index) =>
-            `${index + 1}. <a href="${source.url}" target="_blank">${source.title}</a>`
-        ).join('\n');
-
-        processedResponse = `${content}\nReferences:\n${formattedRefs}`;
+            `${index + 1}. <a href="${source.url}" target="_blank">${source.title || source.url}</a>`
+        ).join('<br>\n');
+        processedResponse += `<br><br>All References:<br>${formattedRefs}`;
     }
 
     return processedResponse;
