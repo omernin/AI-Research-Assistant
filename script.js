@@ -233,7 +233,7 @@ You are an advanced AI research assistant tasked with creating extensive, in-dep
    - Explain complex ideas with clear examples
 
 2. **Citations and Sources**
-   - Use [SourceName] format for all citations
+   - Use hyperlink format (e.g., <a href="URL" target="_blank">Title</a>) for all citations
    - Multiple source citations for key claims
    - Cross-reference and validate information
    - Highlight consensus and disagreements
@@ -365,7 +365,7 @@ Based on the following research results about "${question}", generate ${CONFIG.f
 
 Research Results:
 ${mainResults.results.map((r, index) => `
-Source ${index + 1} [${r.sourceName}]:
+Source ${index + 1}: <a href="${fixURL(r.url)}" target="_blank">${r.title || r.sourceName}</a>
 ${r.content || r.snippet}
 ---`).join('\n')}`;
     } else {
@@ -382,7 +382,7 @@ ${previousReport}
 
 Additional Research Results:
 ${mainResults.results.map((r, index) => `
-Source ${index + 1} [${r.sourceName}]:
+Source ${index + 1}: <a href="${fixURL(r.url)}" target="_blank">${r.title || r.sourceName}</a>
 ${r.content || r.snippet}
 ---`).join('\n')}`;
     }
@@ -665,10 +665,10 @@ function processResponse(response, sources) {
         return match;
     });
 
-    // Append all fetched references to the final report
+    // Append all fetched references to the final report with hyperlinks only
     if (sources && sources.length > 0) {
-        const formattedRefs = sources.map((source, index) =>
-            `${index + 1}. <a href="${fixURL(source.url)}" target="_blank">${source.title || fixURL(source.url)}</a>`
+        const formattedRefs = sources.map(source =>
+            `<a href="${fixURL(source.url)}" target="_blank">${source.title || (source.sourceName || fixURL(source.url))}</a>`
         ).join('<br>\n');
         processedResponse += `<br><br>All References:<br>${formattedRefs}`;
     }
