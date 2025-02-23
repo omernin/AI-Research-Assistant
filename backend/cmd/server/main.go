@@ -34,8 +34,8 @@ func main() {
 			numResults = n
 		}
 
-		maxContentLength := 8000
-		if n, err := strconv.Atoi(c.DefaultQuery("maxLength", "8000")); err == nil {
+		maxContentLength := 5000
+		if n, err := strconv.Atoi(c.DefaultQuery("maxLength", "5000")); err == nil {
 			maxContentLength = n
 		}
 

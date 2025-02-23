@@ -32,7 +32,7 @@ const MODEL_PRICING = {
 const CONFIG = {
     followUpQuestions: 10,  // Number of follow-up questions to generate
     searchResults: 10,      // Number of DuckDuckGo results to fetch
-    maxContentLength: 8000, // Maximum length of content to fetch per article (in characters)
+    maxContentLength: 5000, // Maximum length of content to fetch per article (in characters)
     depthCycle: 1,         // Number of research cycles to perform (1-3)
 };
 
@@ -656,11 +656,11 @@ function processResponse(response, sources) {
     // Create a mapping of source names
     const sourceMap = new Map(sources.map(s => [s.sourceName.toLowerCase(), s]));
 
-    // Convert [SourceName] references to hyperlinks
+    // Convert [SourceName] references to hyperlinks with fixed URL query formatting
     let processedResponse = response.replace(/\[([^\]]+)\]/g, (match, sourceName) => {
         const source = sourceMap.get(sourceName.toLowerCase());
         if (source) {
-            return `<a href="${source.url}" target="_blank">[${source.sourceName}]</a>`;
+            return `<a href="${fixURL(source.url)}" target="_blank">[${source.sourceName}]</a>`;
         }
         return match;
     });
@@ -668,10 +668,20 @@ function processResponse(response, sources) {
     // Append all fetched references to the final report
     if (sources && sources.length > 0) {
         const formattedRefs = sources.map((source, index) =>
-            `${index + 1}. <a href="${source.url}" target="_blank">${source.title || source.url}</a>`
+            `${index + 1}. <a href="${fixURL(source.url)}" target="_blank">${source.title || fixURL(source.url)}</a>`
         ).join('<br>\n');
         processedResponse += `<br><br>All References:<br>${formattedRefs}`;
     }
 
     return processedResponse;
+}
+
+function fixURL(url) {
+    let fixedUrl = url;
+    // If the URL does not already include a '?' and contains '&', assume query parameters start with '&' and replace the first '&' with '?'
+    if (!fixedUrl.includes('?') && fixedUrl.includes('&')) {
+        fixedUrl = fixedUrl.replace('&', '?');
+    }
+
+    return fixedUrl
 }
