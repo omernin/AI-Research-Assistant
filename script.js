@@ -588,6 +588,13 @@ document.getElementById('questionForm').addEventListener('submit', async functio
     document.getElementById('loading').style.display = 'block';
     document.getElementById('loading').innerHTML = '<div class="loading-animation"></div>';
 
+
+    // Enhance the research prompt before final synthesis
+    const enhancedPromptResponse = await sendMessage([
+        { role: 'user', content: `Generate an enhanced version of this prompt (reply with only the enhanced prompt - no conversation, explanations, lead-in, bullet points, placeholders, or surrounding quotes):\n\n${question}` }
+    ], apiKey, model);
+    const enhancedQuestion = enhancedPromptResponse.choices[0].message.content;
+
     try {
         let currentReport = '';
         let finalReport = '';
@@ -596,7 +603,7 @@ document.getElementById('questionForm').addEventListener('submit', async functio
 
         // Perform multiple research cycles if configured
         for (let cycle = 1; cycle <= CONFIG.depthCycle; cycle++) {
-            const result = await performResearchCycle(question, apiKey, model, cycle, currentReport);
+            const result = await performResearchCycle(enhancedQuestion, apiKey, model, cycle, currentReport);
             currentReport = result.report;
             allSources = [...new Set([...allSources, ...result.sources])];
             totalCost = (parseFloat(totalCost) + parseFloat(result.cost)).toFixed(4);
